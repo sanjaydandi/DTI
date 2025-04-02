@@ -231,13 +231,14 @@ def student_dashboard():
     attendance_records = Attendance.query.filter_by(student_id=student_id).all()
     attendance_data = [record.to_dict() for record in attendance_records]
     
-    # Import datetime here to use in the template
-    from datetime import datetime as dt
+    # Import datetime and date to use in the template
+    from datetime import datetime as dt, date
     
     return render_template('student_dashboard.html', 
                           student=student.to_dict(), 
                           attendance=attendance_data,
-                          datetime=dt)
+                          datetime=dt,
+                          date=date)
 
 # Mark attendance route
 @app.route('/student/attendance', methods=['GET', 'POST'])

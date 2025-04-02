@@ -41,7 +41,7 @@
                 <div class="card-body">
                     {% set is_present_today = false %}
                     {% for record in attendance %}
-                        {% if record.date == date.today().isoformat() %}
+                        {% if record.date == date.today().strftime('%Y-%m-%d') %}
                             {% set is_present_today = true %}
                         {% endif %}
                     {% endfor %}
