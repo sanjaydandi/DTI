@@ -81,11 +81,12 @@ def init_db(app):
         
         # Check if there's at least one admin user
         if Admin.query.count() == 0:
+            # Create a default admin with username 'admin' and password 'admin'
             default_admin = Admin(
                 username='admin',
                 full_name='System Administrator'
             )
-            default_admin.set_password('admin123')
+            default_admin.set_password('admin')
             db.session.add(default_admin)
             db.session.commit()
-            print("Default admin account created")
+            print("Default admin account created with username: admin, password: admin")

@@ -46,6 +46,9 @@ def admin_login():
         username = request.form.get('username')
         password = request.form.get('password')
         
+        # For debugging
+        logger.debug(f"Login attempt for admin: {username}")
+        
         admin = Admin.query.filter_by(username=username).first()
         
         if admin and admin.check_password(password):
@@ -55,6 +58,11 @@ def admin_login():
             flash('Login successful!', 'success')
             return redirect(url_for('admin_dashboard'))
         else:
+            # For debugging admin authentication issues
+            if admin:
+                logger.debug(f"Admin found but password check failed for: {username}")
+            else:
+                logger.debug(f"Admin not found: {username}")
             flash('Invalid username or password', 'danger')
     
     return render_template('admin_login.html')
