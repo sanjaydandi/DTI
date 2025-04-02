@@ -198,3 +198,25 @@
         margin-bottom: 1rem;
     }
 }
+.team-image-container {
+    transition: transform 0.3s ease-in-out;
+}
+
+.team-image-container:hover {
+    transform: scale(1.02);
+}
+
+.testimonial-carousel .btn {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    z-index: 1;
+}
+
+.object-fit-cover {
+    object-fit: cover;
+}
