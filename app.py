@@ -112,15 +112,29 @@ def admin_dashboard():
     # Group attendance by date for chart
     attendance_by_date = {}
     for record in attendance_records:
-        date_str = record.date.isoformat()
-        if date_str in attendance_by_date:
-            attendance_by_date[date_str] += 1
-        else:
-            attendance_by_date[date_str] = 1
+        # Check if date attribute is a date object
+        if hasattr(record, 'date'):
+            # Convert date to string consistently using strftime
+            if isinstance(record.date, str):
+                date_str = record.date
+            else:
+                try:
+                    date_str = record.date.strftime('%Y-%m-%d')
+                except:
+                    continue  # Skip this record if date is invalid
+                
+            if date_str in attendance_by_date:
+                attendance_by_date[date_str] += 1
+            else:
+                attendance_by_date[date_str] = 1
     
     # Sort dates for chart
-    dates = sorted(attendance_by_date.keys())
-    counts = [attendance_by_date[d] for d in dates]
+    dates = sorted(attendance_by_date.keys()) if attendance_by_date else []
+    counts = [attendance_by_date[d] for d in dates] if dates else []
+    
+    # Debug the chart data
+    logger.debug(f"Chart dates: {dates}")
+    logger.debug(f"Chart counts: {counts}")
     
     # Convert student objects to dictionaries for template
     students_data = [student.to_dict() for student in students]

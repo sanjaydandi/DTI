@@ -142,8 +142,10 @@
                                     <td>
                                         {% set present = False %}
                                         {% for record in attendance_records %}
-                                            {% if record.student_id == student.id and record.date == date.today().strftime('%Y-%m-%d') %}
-                                                {% set present = True %}
+                                            {% if record.student_id == student.id %}
+                                                {% if record.date == date.today().strftime('%Y-%m-%d') %}
+                                                    {% set present = True %}
+                                                {% endif %}
                                             {% endif %}
                                         {% endfor %}
                                         

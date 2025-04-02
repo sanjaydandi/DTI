@@ -67,9 +67,9 @@ class Attendance(db.Model):
             'id': self.id,
             'student_id': self.student_id,
             'student_name': self.student.name if self.student else None,
-            'date': self.date.isoformat() if self.date else None,
-            'time': self.time.isoformat() if self.time else None,
-            'created_at': self.created_at.isoformat() if self.created_at else None
+            'date': self.date.strftime('%Y-%m-%d') if self.date else None,
+            'time': self.time.strftime('%H:%M:%S') if self.time else None,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None
         }
 
 # Initialize the database with a default admin user

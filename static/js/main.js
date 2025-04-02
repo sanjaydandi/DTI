@@ -69,17 +69,54 @@ function initializeCharts() {
     
     if (attendanceChartElement) {
         // Get chart data from data attributes
-        const dates = JSON.parse(attendanceChartElement.getAttribute('data-dates') || '[]');
-        const counts = JSON.parse(attendanceChartElement.getAttribute('data-counts') || '[]');
+        let dates = [];
+        let counts = [];
+        
+        try {
+            const datesAttr = attendanceChartElement.getAttribute('data-dates');
+            const countsAttr = attendanceChartElement.getAttribute('data-counts');
+            
+            if (datesAttr && datesAttr !== 'null' && datesAttr !== '') {
+                dates = JSON.parse(datesAttr);
+            }
+            
+            if (countsAttr && countsAttr !== 'null' && countsAttr !== '') {
+                counts = JSON.parse(countsAttr);
+            }
+        } catch (e) {
+            console.error('Error parsing chart data:', e);
+            dates = [];
+            counts = [];
+        }
+        
+        // Provide defaults if data is empty
+        if (!dates.length) {
+            dates = ['No Data'];
+            counts = [0];
+        }
         
         // Initialize attendance chart
         initAttendanceChart('attendance-chart', dates, counts);
     }
     
     if (distributionChartElement) {
-        // Get chart data from data attributes
-        const presentCount = parseInt(distributionChartElement.getAttribute('data-present') || '0');
-        const absentCount = parseInt(distributionChartElement.getAttribute('data-absent') || '0');
+        // Get chart data from data attributes with error handling
+        let presentCount = 0;
+        let absentCount = 0;
+        
+        try {
+            const presentAttr = distributionChartElement.getAttribute('data-present');
+            const absentAttr = distributionChartElement.getAttribute('data-absent');
+            
+            presentCount = presentAttr ? parseInt(presentAttr) : 0;
+            absentCount = absentAttr ? parseInt(absentAttr) : 0;
+            
+            // If NaN, set to 0
+            if (isNaN(presentCount)) presentCount = 0;
+            if (isNaN(absentCount)) absentCount = 0;
+        } catch (e) {
+            console.error('Error parsing distribution chart data:', e);
+        }
         
         // Initialize distribution chart
         initAttendanceDistributionChart('attendance-distribution-chart', presentCount, absentCount);
