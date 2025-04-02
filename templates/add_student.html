@@ -1,0 +1,103 @@
+{% extends 'layout.html' %}
+
+{% block title %}Add Student - Face Recognition Attendance System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-user-plus me-2"></i>Add New Student
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form id="add-student-form" action="{{ url_for('add_student_route') }}" method="POST" class="needs-validation" novalidate>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="student_id" class="form-label">Student ID</label>
+                                <input type="text" class="form-control" id="student_id" name="student_id" required>
+                                <div class="invalid-feedback">
+                                    Please provide a student ID.
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="class_name" class="form-label">Class</label>
+                                <input type="text" class="form-control" id="class_name" name="class_name" required>
+                                <div class="invalid-feedback">
+                                    Please provide a class name.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="name" class="form-label">Full Name</label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                                <div class="invalid-feedback">
+                                    Please provide the student's full name.
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                                <div class="invalid-feedback">
+                                    Please provide a password.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr class="my-4">
+                        
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="form-label">Face Image</label>
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Please ensure the student is properly positioned in front of the camera in good lighting.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="webcam-container mb-3">
+                                    <video id="webcam-video" class="w-100" autoplay playsinline></video>
+                                    <canvas id="webcam-canvas" class="w-100" style="display:none;"></canvas>
+                                    <div class="webcam-overlay text-center">
+                                        <p>Position your face properly</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Hidden input to store the face image data -->
+                                <input type="hidden" id="face-image" name="face_image">
+                                
+                                <div class="d-flex justify-content-center">
+                                    <button type="button" id="capture-face-btn" class="btn btn-info me-2">
+                                        <i class="fas fa-camera me-2"></i>Capture Face
+                                    </button>
+                                    <button type="button" id="retake-face-btn" class="btn btn-secondary" style="display:none;">
+                                        <i class="fas fa-redo me-2"></i>Retake
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr class="my-4">
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-arrow-left me-2"></i>Cancel
+                            </a>
+                            <button type="submit" id="submit-student-btn" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Save Student
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

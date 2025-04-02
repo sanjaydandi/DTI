@@ -1,0 +1,224 @@
+{% extends 'layout.html' %}
+
+{% block title %}Admin Dashboard - Face Recognition Attendance System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0">Admin Dashboard</h1>
+        <div>
+            <button class="btn btn-sm btn-outline-secondary me-2" id="refresh-btn">
+                <i class="fas fa-sync-alt me-1"></i>Refresh Data
+            </button>
+            <a href="{{ url_for('add_student_route') }}" class="btn btn-sm btn-primary">
+                <i class="fas fa-user-plus me-1"></i>Add New Student
+            </a>
+        </div>
+    </div>
+
+    <!-- Attendance Overview Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card metric-card primary h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-xs text-uppercase mb-1">Total Students</div>
+                            <div class="h3 mb-0 font-weight-bold">{{ total_students }}</div>
+                        </div>
+                        <div class="metric-icon text-primary">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card metric-card success h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-xs text-uppercase mb-1">Present Today</div>
+                            <div class="h3 mb-0 font-weight-bold">{{ students_present_today }}</div>
+                        </div>
+                        <div class="metric-icon text-success">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card metric-card info h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-xs text-uppercase mb-1">Absent Today</div>
+                            <div class="h3 mb-0 font-weight-bold">{{ total_students - students_present_today }}</div>
+                        </div>
+                        <div class="metric-icon text-info">
+                            <i class="fas fa-user-times"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card metric-card warning h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-xs text-uppercase mb-1">Attendance Rate</div>
+                            <div class="h3 mb-0 font-weight-bold">{{ "%.1f"|format(attendance_percentage) }}%</div>
+                        </div>
+                        <div class="metric-icon text-warning">
+                            <i class="fas fa-chart-pie"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts and Tables -->
+    <div class="row">
+        <!-- Attendance Chart -->
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold">Attendance Trends</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="attendance-chart" data-dates="{{ dates|tojson }}" data-counts="{{ counts|tojson }}"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance Distribution -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold">Today's Attendance</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="attendance-distribution-chart" data-present="{{ students_present_today }}" data-absent="{{ total_students - students_present_today }}"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Student List -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold">Student List</h6>
+                </div>
+                <div class="card-body">
+                    {% if students %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered attendance-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Class</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in students %}
+                                <tr>
+                                    <td>{{ student.id }}</td>
+                                    <td>{{ student.name }}</td>
+                                    <td>{{ student.class_name }}</td>
+                                    <td>
+                                        {% set present = false %}
+                                        {% for record in attendance_records %}
+                                            {% if record.student_id == student.id and record.date == date.today().isoformat() %}
+                                                {% set present = true %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        
+                                        {% if present %}
+                                        <span class="badge bg-success">Present</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Absent</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <p class="lead">No students found</p>
+                        <a href="{{ url_for('add_student_route') }}" class="btn btn-primary">
+                            <i class="fas fa-user-plus me-1"></i>Add Student
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Attendance -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold">Recent Attendance</h6>
+                </div>
+                <div class="card-body">
+                    {% if attendance_records %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered attendance-table">
+                            <thead>
+                                <tr>
+                                    <th>Student ID</th>
+                                    <th>Name</th>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in attendance_records|sort(attribute='id', reverse=true)[:10] %}
+                                <tr>
+                                    <td>{{ record.student_id }}</td>
+                                    <td>{{ record.student_name }}</td>
+                                    <td>{{ record.date }}</td>
+                                    <td>{{ record.time }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-calendar-check fa-3x text-muted mb-3"></i>
+                        <p class="lead">No attendance records yet</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Refresh button functionality
+    document.getElementById('refresh-btn').addEventListener('click', function() {
+        location.reload();
+    });
+</script>
+{% endblock %}

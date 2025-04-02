@@ -1,0 +1,160 @@
+{% extends 'layout.html' %}
+
+{% block title %}Student Dashboard - Face Recognition Attendance System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8 d-flex align-items-center">
+                            <div>
+                                <h1 class="h3 mb-2">Welcome, {{ student.name }}</h1>
+                                <p class="text-muted mb-0">
+                                    <i class="fas fa-id-card me-2"></i>ID: {{ student.id }}
+                                    <span class="mx-2">|</span>
+                                    <i class="fas fa-users me-2"></i>Class: {{ student.class_name }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                            <a href="{{ url_for('attendance') }}" class="btn btn-primary">
+                                <i class="fas fa-calendar-check me-2"></i>Mark Attendance
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card h-100 shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Attendance Status
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% set is_present_today = false %}
+                    {% for record in attendance %}
+                        {% if record.date == date.today().isoformat() %}
+                            {% set is_present_today = true %}
+                        {% endif %}
+                    {% endfor %}
+                    
+                    <div class="text-center py-4">
+                        {% if is_present_today %}
+                            <div class="mb-3">
+                                <i class="fas fa-check-circle fa-5x text-success"></i>
+                            </div>
+                            <h4 class="text-success">Present Today</h4>
+                            <p class="text-muted">Your attendance has been marked for today.</p>
+                        {% else %}
+                            <div class="mb-3">
+                                <i class="fas fa-exclamation-circle fa-5x text-warning"></i>
+                            </div>
+                            <h4 class="text-warning">Not Marked Yet</h4>
+                            <p class="text-muted">You haven't marked your attendance for today.</p>
+                            <a href="{{ url_for('attendance') }}" class="btn btn-primary mt-2">
+                                <i class="fas fa-calendar-check me-2"></i>Mark Now
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="card h-100 shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Attendance Statistics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if attendance %}
+                        {% set total_days = attendance|length %}
+                        {% set attendance_percentage = (total_days / 30 * 100)|round %}
+                        
+                        <div class="text-center mb-4">
+                            <div class="display-4 font-weight-bold">{{ attendance_percentage }}%</div>
+                            <p class="text-muted">Monthly Attendance Rate</p>
+                        </div>
+                        
+                        <div class="progress mb-3" style="height: 25px;">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ attendance_percentage }}%;" 
+                                aria-valuenow="{{ attendance_percentage }}" aria-valuemin="0" aria-valuemax="100">
+                                {{ attendance_percentage }}%
+                            </div>
+                        </div>
+                        
+                        <div class="row text-center mt-4">
+                            <div class="col-6">
+                                <div class="h4 mb-0">{{ total_days }}</div>
+                                <small class="text-muted">Days Present</small>
+                            </div>
+                            <div class="col-6">
+                                <div class="h4 mb-0">{{ 30 - total_days }}</div>
+                                <small class="text-muted">Days Absent</small>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                            <p>No attendance records found.</p>
+                            <a href="{{ url_for('attendance') }}" class="btn btn-primary mt-2">
+                                <i class="fas fa-calendar-check me-2"></i>Mark Your First Attendance
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i>Recent Attendance History
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if attendance %}
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in attendance|sort(attribute='date', reverse=true) %}
+                                <tr>
+                                    <td>{{ record.date }}</td>
+                                    <td>{{ record.time }}</td>
+                                    <td><span class="badge bg-success">Present</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                        <p class="lead">No attendance records found.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
