@@ -133,7 +133,8 @@ def admin_dashboard():
                           counts=counts,
                           students_present_today=students_present_today,
                           total_students=total_students,
-                          attendance_percentage=attendance_percentage)
+                          attendance_percentage=attendance_percentage,
+                          date=date)
 
 # Add student route
 @app.route('/admin/add_student', methods=['GET', 'POST'])
