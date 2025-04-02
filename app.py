@@ -182,7 +182,13 @@ def add_student_route():
                 return redirect(url_for('add_student_route'))
                 
             # Convert face encoding to a JSON string for storage
-            face_encoding_str = json.dumps(face_encoding.tolist())
+            # Handle both numpy arrays and lists
+            if hasattr(face_encoding, 'tolist'):
+                face_encoding_list = face_encoding.tolist()
+            else:
+                face_encoding_list = face_encoding  # Already a list
+                
+            face_encoding_str = json.dumps(face_encoding_list)
             
             # Create a new student record
             new_student = Student(
@@ -278,7 +284,14 @@ def attendance():
             # Compare with stored face encoding
             stored_encoding = json.loads(student.face_encoding)
             stored_encoding_np = np.array(stored_encoding)
-            match = compare_faces(stored_encoding_np, face_encoding)
+            
+            # Handle both numpy arrays and lists for face_encoding
+            if hasattr(face_encoding, 'tolist'):
+                face_encoding_to_compare = face_encoding
+            else:
+                face_encoding_to_compare = np.array(face_encoding)  # Convert list to numpy array
+                
+            match = compare_faces(stored_encoding_np, face_encoding_to_compare)
             
             if match:
                 # Check if attendance already marked for today
