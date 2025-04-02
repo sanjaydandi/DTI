@@ -30,6 +30,11 @@ else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///attendance.db'
     
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_pre_ping': True,
+    'pool_recycle': 300,
+    'connect_args': {'connect_timeout': 15}
+}
 
 # Initialize database
 init_db(app)
@@ -340,6 +345,87 @@ def attendance():
             flash(f'Error marking attendance: {str(e)}', 'danger')
     
     return render_template('attendance.html', student=student.to_dict())
+
+# Admin manage attendance route
+@app.route('/admin/manage_attendance', methods=['GET', 'POST'])
+def manage_attendance():
+    if not session.get('is_admin'):
+        flash('Please login as admin first!', 'warning')
+        return redirect(url_for('admin_login'))
+    
+    if request.method == 'POST':
+        try:
+            action = request.form.get('action')
+            student_id = request.form.get('student_id')
+            attendance_date = request.form.get('date')
+            
+            if not (action and student_id and attendance_date):
+                flash('Missing required parameters', 'danger')
+                return redirect(url_for('admin_dashboard'))
+            
+            # Convert string date to date object
+            try:
+                attendance_date = datetime.strptime(attendance_date, '%Y-%m-%d').date()
+            except ValueError:
+                flash('Invalid date format', 'danger')
+                return redirect(url_for('admin_dashboard'))
+            
+            # Check if student exists
+            student = Student.query.get(student_id)
+            if not student:
+                flash('Student not found', 'danger')
+                return redirect(url_for('admin_dashboard'))
+            
+            if action == 'mark_present':
+                # Check if attendance already exists for this date
+                existing = Attendance.query.filter_by(
+                    student_id=student_id,
+                    date=attendance_date
+                ).first()
+                
+                if not existing:
+                    # Create new attendance record
+                    new_attendance = Attendance(
+                        student_id=student_id,
+                        date=attendance_date,
+                        time=datetime.now().time()
+                    )
+                    db.session.add(new_attendance)
+                    db.session.commit()
+                    flash(f'Marked {student.name} present on {attendance_date}', 'success')
+                else:
+                    flash(f'Attendance already marked for {student.name} on {attendance_date}', 'info')
+                    
+            elif action == 'mark_absent':
+                # Find and delete attendance record
+                existing = Attendance.query.filter_by(
+                    student_id=student_id,
+                    date=attendance_date
+                ).first()
+                
+                if existing:
+                    db.session.delete(existing)
+                    db.session.commit()
+                    flash(f'Marked {student.name} absent on {attendance_date}', 'success')
+                else:
+                    flash(f'No attendance record found for {student.name} on {attendance_date}', 'info')
+            
+            return redirect(url_for('admin_dashboard'))
+                
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error managing attendance: {str(e)}")
+            flash(f'Error: {str(e)}', 'danger')
+            return redirect(url_for('admin_dashboard'))
+    
+    # For GET request, show all students and dates for selection
+    students = Student.query.all()
+    attendance_records = Attendance.query.all()
+    
+    return render_template('manage_attendance.html',
+                          students=[s.to_dict() for s in students],
+                          attendance_records=[a.to_dict() for a in attendance_records],
+                          today=date.today().strftime('%Y-%m-%d'))
 
 # Logout route
 @app.route('/logout')

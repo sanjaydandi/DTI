@@ -3,16 +3,16 @@
 {% block title %}Student Dashboard - Face Recognition Attendance System{% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="container-fluid py-4">
     <div class="row mb-4">
         <div class="col-md-12">
-            <div class="card shadow">
-                <div class="card-body">
+            <div class="card shadow-sm border-0 bg-gradient">
+                <div class="card-body" style="background: linear-gradient(120deg, #343a40, #0d6efd);">
                     <div class="row">
                         <div class="col-md-8 d-flex align-items-center">
-                            <div>
-                                <h1 class="h3 mb-2">Welcome, {{ student.name }}</h1>
-                                <p class="text-muted mb-0">
+                            <div class="text-white">
+                                <h1 class="h3 mb-2 fw-bold">Welcome, {{ student.name }}</h1>
+                                <p class="mb-0 opacity-75">
                                     <i class="fas fa-id-card me-2"></i>ID: {{ student.id }}
                                     <span class="mx-2">|</span>
                                     <i class="fas fa-users me-2"></i>Class: {{ student.class_name }}
@@ -20,7 +20,7 @@
                             </div>
                         </div>
                         <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                            <a href="{{ url_for('attendance') }}" class="btn btn-primary">
+                            <a href="{{ url_for('attendance') }}" class="btn btn-light">
                                 <i class="fas fa-calendar-check me-2"></i>Mark Attendance
                             </a>
                         </div>
@@ -32,10 +32,10 @@
     
     <div class="row">
         <div class="col-md-6 mb-4">
-            <div class="card h-100 shadow">
-                <div class="card-header">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-header bg-transparent border-bottom-0">
                     <h5 class="mb-0">
-                        <i class="fas fa-info-circle me-2"></i>Attendance Status
+                        <i class="fas fa-info-circle me-2 text-primary"></i>Today's Attendance Status
                     </h5>
                 </div>
                 <div class="card-body">
@@ -43,22 +43,37 @@
                     {% for record in attendance %}
                         {% if record.date == date.today().strftime('%Y-%m-%d') %}
                             {% set is_present_today = true %}
+                            {% break %}
                         {% endif %}
                     {% endfor %}
                     
                     <div class="text-center py-4">
                         {% if is_present_today %}
-                            <div class="mb-3">
-                                <i class="fas fa-check-circle fa-5x text-success"></i>
+                            <div class="mb-3 position-relative">
+                                <div class="position-relative d-inline-block">
+                                    <i class="fas fa-check-circle fa-5x text-success"></i>
+                                    <svg class="position-absolute top-0 start-0" width="100%" height="100%" viewBox="0 0 100 100">
+                                        <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(40, 167, 69, 0.2)" stroke-width="8" stroke-dasharray="283" stroke-dashoffset="0">
+                                            <animate attributeName="stroke-dashoffset" from="283" to="0" dur="2s" repeatCount="indefinite" />
+                                        </circle>
+                                    </svg>
+                                </div>
                             </div>
-                            <h4 class="text-success">Present Today</h4>
-                            <p class="text-muted">Your attendance has been marked for today.</p>
+                            <h4 class="text-success fw-bold">Present Today</h4>
+                            <p class="text-muted">Your attendance has been successfully recorded for today</p>
                         {% else %}
-                            <div class="mb-3">
-                                <i class="fas fa-exclamation-circle fa-5x text-warning"></i>
+                            <div class="mb-3 position-relative">
+                                <div class="position-relative d-inline-block">
+                                    <i class="fas fa-exclamation-circle fa-5x text-warning"></i>
+                                    <svg class="position-absolute top-0 start-0" width="100%" height="100%" viewBox="0 0 100 100">
+                                        <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255, 193, 7, 0.2)" stroke-width="8" stroke-dasharray="283" stroke-dashoffset="0">
+                                            <animate attributeName="stroke-dashoffset" from="283" to="0" dur="2s" repeatCount="indefinite" />
+                                        </circle>
+                                    </svg>
+                                </div>
                             </div>
-                            <h4 class="text-warning">Not Marked Yet</h4>
-                            <p class="text-muted">You haven't marked your attendance for today.</p>
+                            <h4 class="text-warning fw-bold">Not Marked Yet</h4>
+                            <p class="text-muted">You haven't marked your attendance for today</p>
                             <a href="{{ url_for('attendance') }}" class="btn btn-primary mt-2">
                                 <i class="fas fa-calendar-check me-2"></i>Mark Now
                             </a>
@@ -69,10 +84,10 @@
         </div>
         
         <div class="col-md-6 mb-4">
-            <div class="card h-100 shadow">
-                <div class="card-header">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-header bg-transparent border-bottom-0">
                     <h5 class="mb-0">
-                        <i class="fas fa-chart-line me-2"></i>Attendance Statistics
+                        <i class="fas fa-chart-line me-2 text-primary"></i>Attendance Statistics
                     </h5>
                 </div>
                 <div class="card-body">
@@ -81,32 +96,43 @@
                         {% set attendance_percentage = (total_days / 30 * 100)|round %}
                         
                         <div class="text-center mb-4">
-                            <div class="display-4 font-weight-bold">{{ attendance_percentage }}%</div>
-                            <p class="text-muted">Monthly Attendance Rate</p>
-                        </div>
-                        
-                        <div class="progress mb-3" style="height: 25px;">
-                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ attendance_percentage }}%;" 
-                                aria-valuenow="{{ attendance_percentage }}" aria-valuemin="0" aria-valuemax="100">
-                                {{ attendance_percentage }}%
+                            <div class="position-relative d-inline-block">
+                                <div class="display-4 fw-bold">{{ attendance_percentage }}%</div>
+                                <svg class="position-absolute top-50 start-50 translate-middle" width="140" height="140" viewBox="0 0 120 120">
+                                    <circle cx="60" cy="60" r="54" fill="none" stroke="#e9ecef" stroke-width="12" />
+                                    <circle cx="60" cy="60" r="54" fill="none" stroke="#0d6efd" stroke-width="12" 
+                                        stroke-dasharray="339.292" stroke-dashoffset="{{ 339.292 - (339.292 * attendance_percentage/100) }}" transform="rotate(-90 60 60)" />
+                                </svg>
                             </div>
+                            <p class="text-muted mt-3">Monthly Attendance Rate</p>
                         </div>
                         
                         <div class="row text-center mt-4">
                             <div class="col-6">
-                                <div class="h4 mb-0">{{ total_days }}</div>
-                                <small class="text-muted">Days Present</small>
+                                <div class="card bg-success bg-opacity-10 border-0 py-3">
+                                    <div class="h3 mb-0 fw-bold text-success">{{ total_days }}</div>
+                                    <small class="text-muted">Days Present</small>
+                                </div>
                             </div>
                             <div class="col-6">
-                                <div class="h4 mb-0">{{ 30 - total_days }}</div>
-                                <small class="text-muted">Days Absent</small>
+                                <div class="card bg-danger bg-opacity-10 border-0 py-3">
+                                    <div class="h3 mb-0 fw-bold text-danger">{{ 30 - total_days }}</div>
+                                    <small class="text-muted">Days Absent</small>
+                                </div>
                             </div>
                         </div>
                     {% else %}
                         <div class="text-center py-4">
-                            <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
-                            <p>No attendance records found.</p>
-                            <a href="{{ url_for('attendance') }}" class="btn btn-primary mt-2">
+                            <div class="position-relative d-inline-block mb-3">
+                                <i class="fas fa-chart-bar fa-4x text-muted opacity-50"></i>
+                                <svg class="position-absolute top-0 start-0" width="100%" height="100%" viewBox="0 0 100 100">
+                                    <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(0, 123, 255, 0.2)" stroke-width="8" stroke-dasharray="283" stroke-dashoffset="0">
+                                        <animate attributeName="stroke-dashoffset" from="283" to="0" dur="2s" repeatCount="indefinite" />
+                                    </circle>
+                                </svg>
+                            </div>
+                            <h5 class="text-muted">No attendance records found</h5>
+                            <a href="{{ url_for('attendance') }}" class="btn btn-primary mt-3">
                                 <i class="fas fa-calendar-check me-2"></i>Mark Your First Attendance
                             </a>
                         </div>
@@ -118,17 +144,17 @@
     
     <div class="row">
         <div class="col-md-12">
-            <div class="card shadow">
-                <div class="card-header">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-transparent">
                     <h5 class="mb-0">
-                        <i class="fas fa-history me-2"></i>Recent Attendance History
+                        <i class="fas fa-history me-2 text-primary"></i>Recent Attendance History
                     </h5>
                 </div>
                 <div class="card-body">
                     {% if attendance %}
                     <div class="table-responsive">
-                        <table class="table">
-                            <thead>
+                        <table class="table table-hover">
+                            <thead class="table-light">
                                 <tr>
                                     <th>Date</th>
                                     <th>Time</th>
@@ -147,9 +173,10 @@
                         </table>
                     </div>
                     {% else %}
-                    <div class="text-center py-4">
-                        <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
-                        <p class="lead">No attendance records found.</p>
+                    <div class="text-center py-5">
+                        <i class="fas fa-calendar-times fa-4x text-muted opacity-50 mb-3"></i>
+                        <h5 class="text-muted">No attendance records found</h5>
+                        <p class="text-muted small">Your attendance history will appear here once you start marking attendance</p>
                     </div>
                     {% endif %}
                 </div>

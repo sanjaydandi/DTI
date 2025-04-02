@@ -3,20 +3,21 @@
 {% block title %}Student Login - Face Recognition Attendance System{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="row justify-content-center mt-5">
-        <div class="col-md-6 col-lg-5">
-            <div class="card shadow">
-                <div class="card-body p-4">
+<div class="login-page">
+    <div class="login-bg"></div>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div class="login-container">
                     <div class="text-center mb-4">
-                        <i class="fas fa-user-graduate fa-3x text-primary mb-3"></i>
-                        <h2 class="card-title mb-0">Student Login</h2>
-                        <p class="text-muted">Access your attendance portal</p>
+                        <i class="fas fa-user-graduate fa-4x text-primary mb-3 login-logo"></i>
+                        <h2 class="card-title mb-0 text-white">Student Login</h2>
+                        <p class="text-light opacity-75">Access your attendance portal</p>
                     </div>
                     
                     <form method="POST" action="{{ url_for('student_login') }}" class="needs-validation" novalidate>
                         <div class="mb-3">
-                            <label for="student_id" class="form-label">Student ID</label>
+                            <label for="student_id" class="form-label text-light">Student ID</label>
                             <div class="input-group">
                                 <span class="input-group-text">
                                     <i class="fas fa-id-card"></i>
@@ -29,7 +30,7 @@
                         </div>
                         
                         <div class="mb-4">
-                            <label for="password" class="form-label">Password</label>
+                            <label for="password" class="form-label text-light">Password</label>
                             <div class="input-group">
                                 <span class="input-group-text">
                                     <i class="fas fa-lock"></i>
@@ -47,19 +48,20 @@
                             </button>
                         </div>
                     </form>
-                </div>
-                <div class="card-footer text-center py-3">
-                    <div class="small">
-                        <a href="{{ url_for('admin_login') }}">Login as admin instead</a>
+                
+                    <div class="text-center py-3 mt-4 border-top border-secondary">
+                        <div class="small">
+                            <a href="{{ url_for('admin_login') }}" class="text-light">Login as admin instead</a>
+                        </div>
+                    </div>
+                
+                    <div class="text-center mt-2">
+                        <p class="text-light opacity-75 small">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Contact your administrator if you don't have an account
+                        </p>
                     </div>
                 </div>
-            </div>
-            
-            <div class="text-center mt-4">
-                <p class="text-muted">
-                    <i class="fas fa-info-circle me-1"></i>
-                    Contact your administrator if you don't have an account
-                </p>
             </div>
         </div>
     </div>

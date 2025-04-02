@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Face Recognition Attendance System - A modern solution for attendance tracking">
+    <meta name="author" content="FaceAttend">
     <title>{% block title %}Face Recognition Attendance System{% endblock %}</title>
     
     <!-- Bootstrap CSS -->
@@ -14,14 +16,22 @@
     <!-- Custom CSS -->
     <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet">
     
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.ico') }}">
+    
     {% block head %}{% endblock %}
 </head>
 <body>
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
         <div class="container">
-            <a class="navbar-brand" href="{{ url_for('index') }}">
-                <i class="fas fa-id-badge me-2"></i>FaceAttend
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
+                <div class="d-flex align-items-center">
+                    <div class="logo-icon me-2 rounded-circle bg-primary d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                        <i class="fas fa-id-badge text-white"></i>
+                    </div>
+                    <span>FaceAttend</span>
+                </div>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
@@ -45,6 +55,11 @@
                             <i class="fas fa-user-plus me-1"></i> Add Student
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/admin/manage_attendance' %}active{% endif %}" href="{{ url_for('manage_attendance') }}">
+                            <i class="fas fa-calendar-alt me-1"></i> Manage Attendance
+                        </a>
+                    </li>
                     {% elif session.get('student_id') %}
                     <li class="nav-item">
                         <a class="nav-link {% if request.path == '/student/dashboard' %}active{% endif %}" href="{{ url_for('student_dashboard') }}">
@@ -62,15 +77,17 @@
                 <ul class="navbar-nav">
                     {% if session.get('is_admin') or session.get('student_id') %}
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-user-circle me-1"></i>
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center me-2" style="width: 28px; height: 28px;">
+                                <i class="fas fa-user"></i>
+                            </div>
                             {% if session.get('is_admin') %}
                                 {{ session.get('username', 'Admin') }}
                             {% else %}
                                 {{ session.get('name', 'Student') }}
                             {% endif %}
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                        <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userDropdown">
                             <li><a class="dropdown-item" href="{{ url_for('logout') }}">
                                 <i class="fas fa-sign-out-alt me-1"></i> Logout
                             </a></li>
@@ -78,13 +95,13 @@
                     </li>
                     {% else %}
                     <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/admin/login' %}active{% endif %}" href="{{ url_for('admin_login') }}">
-                            <i class="fas fa-user-shield me-1"></i> Admin Login
+                        <a class="nav-link btn btn-outline-primary btn-sm me-2 {% if request.path == '/admin/login' %}active{% endif %}" href="{{ url_for('admin_login') }}">
+                            <i class="fas fa-user-shield me-1"></i> Admin
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/student/login' %}active{% endif %}" href="{{ url_for('student_login') }}">
-                            <i class="fas fa-user me-1"></i> Student Login
+                        <a class="nav-link btn btn-primary btn-sm {% if request.path == '/student/login' %}active{% endif %}" href="{{ url_for('student_login') }}">
+                            <i class="fas fa-user-graduate me-1"></i> Student
                         </a>
                     </li>
                     {% endif %}
@@ -98,7 +115,16 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
+                        {% if category == 'success' %}
+                            <i class="fas fa-check-circle me-2"></i>
+                        {% elif category == 'danger' %}
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                        {% elif category == 'warning' %}
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                        {% elif category == 'info' %}
+                            <i class="fas fa-info-circle me-2"></i>
+                        {% endif %}
                         {{ message }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
@@ -108,14 +134,32 @@
     </div>
     
     <!-- Main Content -->
-    <main class="py-4">
+    <main>
         {% block content %}{% endblock %}
     </main>
     
     <!-- Footer -->
-    <footer class="py-4 bg-dark text-center text-white-50">
+    <footer class="py-4 bg-dark text-center text-white-50 mt-5">
         <div class="container">
-            <p class="mb-0">© 2023 Face Recognition Attendance System</p>
+            <div class="row">
+                <div class="col-md-4 text-md-start mb-3 mb-md-0">
+                    <h6 class="text-white">FaceAttend</h6>
+                    <p class="small mb-0">A modern facial recognition attendance system</p>
+                </div>
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <h6 class="text-white">Quick Links</h6>
+                    <ul class="list-inline mb-0">
+                        <li class="list-inline-item"><a href="{{ url_for('index') }}" class="text-decoration-none text-white-50">Home</a></li>
+                        <li class="list-inline-item">•</li>
+                        <li class="list-inline-item"><a href="{{ url_for('student_login') }}" class="text-decoration-none text-white-50">Student</a></li>
+                        <li class="list-inline-item">•</li>
+                        <li class="list-inline-item"><a href="{{ url_for('admin_login') }}" class="text-decoration-none text-white-50">Admin</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <p class="mb-0">© 2025 Face Recognition Attendance System</p>
+                </div>
+            </div>
         </div>
     </footer>
     
