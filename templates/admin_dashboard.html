@@ -140,10 +140,10 @@
                                     <td>{{ student.name }}</td>
                                     <td>{{ student.class_name }}</td>
                                     <td>
-                                        {% set present = false %}
+                                        {% set present = False %}
                                         {% for record in attendance_records %}
                                             {% if record.student_id == student.id and record.date == date.today().isoformat() %}
-                                                {% set present = true %}
+                                                {% set present = True %}
                                             {% endif %}
                                         {% endfor %}
                                         
@@ -190,7 +190,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for record in attendance_records|sort(attribute='id', reverse=true)[:10] %}
+                                {% for record in (attendance_records|sort(attribute='id', reverse=True))[:10] %}
                                 <tr>
                                     <td>{{ record.student_id }}</td>
                                     <td>{{ record.student_name }}</td>
