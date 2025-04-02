@@ -2,6 +2,7 @@ import os
 import logging
 import base64
 import io
+import json
 import numpy as np
 from datetime import datetime, date
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
@@ -10,11 +11,7 @@ import cv2
 from PIL import Image
 
 from face_utils import encode_face, compare_faces
-from data_store import (
-    get_admin, get_student, add_student, mark_attendance, 
-    get_students, get_attendance_records, get_student_attendance,
-    initialize_data
-)
+from models import db, init_db, Admin, Student, Attendance
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -24,8 +21,18 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key")
 
-# Initialize data store with default admin
-initialize_data()
+# Configure database
+db_url = os.environ.get('DATABASE_URL')
+if db_url:
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+else:
+    # Fallback to SQLite if no DATABASE_URL is provided
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///attendance.db'
+    
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Initialize database
+init_db(app)
 
 # Route for home page
 @app.route('/')
@@ -39,11 +46,11 @@ def admin_login():
         username = request.form.get('username')
         password = request.form.get('password')
         
-        admin = get_admin(username)
+        admin = Admin.query.filter_by(username=username).first()
         
-        if admin and check_password_hash(admin['password_hash'], password):
-            session['admin_id'] = admin['id']
-            session['username'] = admin['username']
+        if admin and admin.check_password(password):
+            session['admin_id'] = admin.id
+            session['username'] = admin.username
             session['is_admin'] = True
             flash('Login successful!', 'success')
             return redirect(url_for('admin_dashboard'))
@@ -59,11 +66,11 @@ def student_login():
         student_id = request.form.get('student_id')
         password = request.form.get('password')
         
-        student = get_student(student_id)
+        student = Student.query.get(student_id)
         
-        if student and check_password_hash(student['password_hash'], password):
-            session['student_id'] = student['id']
-            session['name'] = student['name']
+        if student and student.check_password(password):
+            session['student_id'] = student.id
+            session['name'] = student.name
             session['is_admin'] = False
             flash('Login successful!', 'success')
             return redirect(url_for('student_dashboard'))
@@ -79,14 +86,15 @@ def admin_dashboard():
         flash('Please login as admin first!', 'warning')
         return redirect(url_for('admin_login'))
     
-    # Get all students and attendance records
-    students = get_students()
-    attendance_records = get_attendance_records()
+    # Get all students and attendance records from database
+    students = Student.query.all()
+    attendance_records = Attendance.query.all()
     
     # Calculate attendance statistics
-    today = date.today().isoformat()
-    students_present_today = len([record for record in attendance_records 
-                               if record['date'] == today])
+    today = date.today()
+    students_present_today = Attendance.query.filter(
+        Attendance.date == today
+    ).count()
     
     total_students = len(students)
     attendance_percentage = 0
@@ -96,18 +104,23 @@ def admin_dashboard():
     # Group attendance by date for chart
     attendance_by_date = {}
     for record in attendance_records:
-        if record['date'] in attendance_by_date:
-            attendance_by_date[record['date']] += 1
+        date_str = record.date.isoformat()
+        if date_str in attendance_by_date:
+            attendance_by_date[date_str] += 1
         else:
-            attendance_by_date[record['date']] = 1
+            attendance_by_date[date_str] = 1
     
     # Sort dates for chart
     dates = sorted(attendance_by_date.keys())
     counts = [attendance_by_date[d] for d in dates]
     
+    # Convert student objects to dictionaries for template
+    students_data = [student.to_dict() for student in students]
+    attendance_data = [record.to_dict() for record in attendance_records]
+    
     return render_template('admin_dashboard.html', 
-                          students=students,
-                          attendance_records=attendance_records,
+                          students=students_data,
+                          attendance_records=attendance_data,
                           dates=dates,
                           counts=counts,
                           students_present_today=students_present_today,
@@ -154,19 +167,33 @@ def add_student_route():
                 flash('No face detected in the image. Please try again.', 'danger')
                 return redirect(url_for('add_student_route'))
             
-            # Hash the password
-            password_hash = generate_password_hash(password)
-            
-            # Add student to the data store
-            student = add_student(student_id, name, password_hash, class_name, face_encoding)
-            
-            if student:
-                flash(f'Student {name} added successfully!', 'success')
-                return redirect(url_for('admin_dashboard'))
-            else:
+            # Check if student_id already exists
+            existing_student = Student.query.get(student_id)
+            if existing_student:
                 flash('Student ID already exists', 'danger')
+                return redirect(url_for('add_student_route'))
+                
+            # Convert face encoding to a JSON string for storage
+            face_encoding_str = json.dumps(face_encoding.tolist())
+            
+            # Create a new student record
+            new_student = Student(
+                id=student_id,
+                name=name,
+                class_name=class_name,
+                face_encoding=face_encoding_str
+            )
+            new_student.set_password(password)
+            
+            # Add to database
+            db.session.add(new_student)
+            db.session.commit()
+            
+            flash(f'Student {name} added successfully!', 'success')
+            return redirect(url_for('admin_dashboard'))
                 
         except Exception as e:
+            db.session.rollback()
             logger.error(f"Error adding student: {str(e)}")
             flash(f'Error adding student: {str(e)}', 'danger')
     
@@ -180,18 +207,23 @@ def student_dashboard():
         return redirect(url_for('student_login'))
     
     student_id = session.get('student_id')
-    student = get_student(student_id)
+    student = Student.query.get(student_id)
     
     if not student:
         flash('Student not found', 'danger')
         return redirect(url_for('student_login'))
     
     # Get attendance records for this student
-    attendance = get_student_attendance(student_id)
+    attendance_records = Attendance.query.filter_by(student_id=student_id).all()
+    attendance_data = [record.to_dict() for record in attendance_records]
+    
+    # Import datetime here to use in the template
+    from datetime import datetime as dt
     
     return render_template('student_dashboard.html', 
-                          student=student, 
-                          attendance=attendance)
+                          student=student.to_dict(), 
+                          attendance=attendance_data,
+                          datetime=dt)
 
 # Mark attendance route
 @app.route('/student/attendance', methods=['GET', 'POST'])
@@ -201,7 +233,7 @@ def attendance():
         return redirect(url_for('student_login'))
     
     student_id = session.get('student_id')
-    student = get_student(student_id)
+    student = Student.query.get(student_id)
     
     if not student:
         flash('Student not found', 'danger')
@@ -236,22 +268,41 @@ def attendance():
                 return redirect(url_for('attendance'))
             
             # Compare with stored face encoding
-            stored_encoding = np.array(student['face_encoding'])
-            match = compare_faces(stored_encoding, face_encoding)
+            stored_encoding = json.loads(student.face_encoding)
+            stored_encoding_np = np.array(stored_encoding)
+            match = compare_faces(stored_encoding_np, face_encoding)
             
             if match:
-                # Mark attendance
-                mark_attendance(student_id)
-                flash('Attendance marked successfully!', 'success')
+                # Check if attendance already marked for today
+                today = date.today()
+                existing_attendance = Attendance.query.filter_by(
+                    student_id=student_id,
+                    date=today
+                ).first()
+                
+                if existing_attendance:
+                    flash('Attendance already marked for today', 'info')
+                else:
+                    # Create new attendance record
+                    new_attendance = Attendance(
+                        student_id=student_id,
+                        date=today,
+                        time=datetime.now().time()
+                    )
+                    db.session.add(new_attendance)
+                    db.session.commit()
+                    flash('Attendance marked successfully!', 'success')
+                
                 return redirect(url_for('student_dashboard'))
             else:
                 flash('Face verification failed. Please try again.', 'danger')
                 
         except Exception as e:
+            db.session.rollback()
             logger.error(f"Error marking attendance: {str(e)}")
             flash(f'Error marking attendance: {str(e)}', 'danger')
     
-    return render_template('attendance.html', student=student)
+    return render_template('attendance.html', student=student.to_dict())
 
 # Logout route
 @app.route('/logout')
