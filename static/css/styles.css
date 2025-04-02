@@ -220,3 +220,52 @@
 .object-fit-cover {
     object-fit: cover;
 }
+
+.team-members-container {
+    gap: -1rem;
+}
+
+.team-member {
+    position: relative;
+    margin-right: -1rem;
+    transition: all 0.3s ease;
+    z-index: 1;
+}
+
+.team-member:hover {
+    z-index: 2;
+    transform: scale(1.05);
+}
+
+.team-member-img {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    object-fit: cover;
+    cursor: pointer;
+}
+
+.team-member::after {
+    content: attr(data-name) '\A' attr(data-role);
+    white-space: pre;
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-10px);
+    padding: 0.5rem 1rem;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s ease;
+    text-align: center;
+    min-width: max-content;
+}
+
+.team-member:hover::after {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-5px);
+}
