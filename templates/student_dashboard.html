@@ -43,7 +43,6 @@
                     {% for record in attendance %}
                         {% if record.date == date.today().strftime('%Y-%m-%d') %}
                             {% set is_present_today = true %}
-                            {% break %}
                         {% endif %}
                     {% endfor %}
                     
