@@ -9,7 +9,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 import cv2
 from PIL import Image
 
-from face_utils import encode_face, compare_faces
+from face_utils import encode_face, compare_faces, is_valid_attendance_time, is_valid_location
 from models import db, init_db, Admin, Student, Attendance
 
 # Configure logging
