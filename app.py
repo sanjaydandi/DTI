@@ -218,7 +218,8 @@ def add_student_route():
                 id=student_id,
                 name=name,
                 class_name=class_name,
-                face_encoding=face_encoding_str
+                face_encoding=face_encoding_str,
+                profile_image=face_image_data  # Save the captured image
             )
             new_student.set_password(password)
             

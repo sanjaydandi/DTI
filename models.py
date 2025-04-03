@@ -34,6 +34,7 @@ class Student(db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     class_name = db.Column(db.String(50), nullable=False)
     face_encoding = db.Column(db.Text, nullable=True)  # Store as JSON string
+    profile_image = db.Column(db.Text, nullable=True)  # Store base64 image
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     attendances = db.relationship('Attendance', backref='student', lazy=True)

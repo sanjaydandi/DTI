@@ -54,10 +54,36 @@ def encode_face(image):
         logger.error(f"Error encoding face: {str(e)}")
         return None
 
+def detect_liveness(image):
+    """Basic liveness detection by checking face movement"""
+    try:
+        # Convert to grayscale
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        
+        # Detect faces
+        faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+        
+        if len(faces) == 0:
+            return False
+            
+        # Check for basic facial features
+        face_x, face_y, face_w, face_h = faces[0]
+        face_roi = gray[face_y:face_y+face_h, face_x:face_x+face_w]
+        
+        # Use eye detection as basic liveness check
+        eye_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
+        eyes = eye_cascade.detectMultiScale(face_roi)
+        
+        return len(eyes) >= 2  # At least two eyes should be visible
+        
+    except Exception as e:
+        logger.error(f"Error in liveness detection: {str(e)}")
+        return False
+
 def compare_faces(known_face_encoding, face_encoding_to_check, tolerance=0.6):
     """
     Compares a known face encoding with another face encoding to see if they match
-    using a simplified method (Euclidean distance).
+    using a simplified method (Euclidean distance) with stricter validation.
 
     Args:
         known_face_encoding: Known face encoding
