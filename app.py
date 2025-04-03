@@ -427,6 +427,27 @@ def manage_attendance():
                           today=date.today().strftime('%Y-%m-%d'))
 
 # Logout route
+@app.route('/admin/delete_student', methods=['POST'])
+def delete_student():
+    if not session.get('is_admin'):
+        flash('Please login as admin first!', 'warning')
+        return redirect(url_for('admin_login'))
+        
+    student_id = request.form.get('student_id')
+    student = Student.query.get(student_id)
+    
+    if student:
+        # Delete associated attendance records first
+        Attendance.query.filter_by(student_id=student_id).delete()
+        # Delete the student
+        db.session.delete(student)
+        db.session.commit()
+        flash(f'Student {student.name} has been deleted', 'success')
+    else:
+        flash('Student not found', 'danger')
+        
+    return redirect(url_for('admin_dashboard'))
+
 @app.route('/logout')
 def logout():
     session.clear()
