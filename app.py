@@ -9,7 +9,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 import cv2
 from PIL import Image
 
-from face_utils import encode_face, compare_faces, is_valid_attendance_time, is_valid_location
+from face_utils import encode_face, compare_faces
 from models import db, init_db, Admin, Student, Attendance
 
 # Configure logging
@@ -265,23 +265,6 @@ def attendance():
     if not session.get('student_id'):
         flash('Please login first!', 'warning')
         return redirect(url_for('student_login'))
-    
-    # Get location from request
-    if request.method == 'POST':
-        # Check attendance time window when actually marking attendance
-        if not is_valid_attendance_time():
-            flash('Attendance can only be marked during 8:30-9:20 AM or 1:00-2:00 PM', 'danger')
-            return redirect(url_for('attendance'))
-        latitude = request.form.get('latitude')
-        longitude = request.form.get('longitude')
-        
-        if not (latitude and longitude):
-            flash('Location access is required to mark attendance', 'danger')
-            return redirect(url_for('attendance'))
-            
-        if not is_valid_location(latitude, longitude):
-            flash('Attendance can only be marked from within campus premises', 'danger')
-            return redirect(url_for('student_dashboard'))
     
     student_id = session.get('student_id')
     student = Student.query.get(student_id)

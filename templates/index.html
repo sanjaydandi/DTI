@@ -9,52 +9,18 @@
             <div class="col-md-6">
                 <h1 class="display-4 fw-bold mb-4">Face Recognition Attendance System</h1>
                 <p class="lead mb-4">A modern solution for taking attendance using facial recognition technology. Fast, accurate, and secure.</p>
-                <!-- <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                <div class="d-grid gap-2 d-md-flex justify-content-md-start">
                     <a href="{{ url_for('student_login') }}" class="btn btn-primary btn-lg px-4 me-md-2">
                         <i class="fas fa-user-check me-2"></i>Mark Attendance
                     </a>
-                    
                     <a href="{{ url_for('admin_login') }}" class="btn btn-outline-light btn-lg px-4">
                         <i class="fas fa-user-shield me-2"></i>Admin Login
                     </a>
-                </div> -->
+                </div>
             </div>
             <div class="col-md-6 d-none d-md-block">
                 <div class="text-center">
                     <img src="{{ url_for('static', filename='logo.png') }}" alt="Hero Image" class="img-fluid">
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Animated Team Section -->
-<section class="py-5">
-    <div class="container">
-        <div class="row text-center mb-5">
-            <div class="col-12">
-                <h2 class="fw-bold">Meet Our Team</h2>
-                <p class="lead text-muted">The faces behind the innovation</p>
-            </div>
-        </div>
-        <div class="row justify-content-center">
-            <div class="col-12">
-                <div class="team-members-container d-flex flex-wrap justify-content-center">
-                    <div class="team-member" data-name="John Doe" data-role="Software Engineer">
-                        <img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&w=300" alt="John Doe" class="team-member-img">
-                    </div>
-                    <div class="team-member" data-name="Robert Johnson" data-role="Product Manager">
-                        <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300" alt="Robert Johnson" class="team-member-img">
-                    </div>
-                    <div class="team-member" data-name="Jane Smith" data-role="Data Scientist">
-                        <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=300" alt="Jane Smith" class="team-member-img">
-                    </div>
-                    <div class="team-member" data-name="Emily Davis" data-role="UX Designer">
-                        <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=300" alt="Emily Davis" class="team-member-img">
-                    </div>
-                    <div class="team-member" data-name="Tyler Durden" data-role="Lead Developer">
-                        <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300" alt="Tyler Durden" class="team-member-img">
-                    </div>
                 </div>
             </div>
         </div>
@@ -153,7 +119,7 @@
             </div>
             <div class="col-md-6 d-flex align-items-center">
                 <div class="rounded p-4 bg-dark w-100">
-                    <div class="p-4 bg-gray-600 rounded">
+                    <div class="p-4 bg-light rounded">
                         <h4 class="text-center mb-4">Getting Started</h4>
                         <div class="d-grid gap-3">
                             <a href="{{ url_for('student_login') }}" class="btn btn-primary btn-lg">
@@ -170,5 +136,36 @@
     </div>
 </section>
 
-
+<!-- Animated Team Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="row text-center mb-5">
+            <div class="col-12">
+                <h2 class="fw-bold">Meet Our Team</h2>
+                <p class="lead text-muted">The faces behind the innovation</p>
+            </div>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-12">
+                <div class="team-members-container d-flex flex-wrap justify-content-center">
+                    <div class="team-member" data-name="John Doe" data-role="Software Engineer">
+                        <img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&w=300" alt="John Doe" class="team-member-img">
+                    </div>
+                    <div class="team-member" data-name="Robert Johnson" data-role="Product Manager">
+                        <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300" alt="Robert Johnson" class="team-member-img">
+                    </div>
+                    <div class="team-member" data-name="Jane Smith" data-role="Data Scientist">
+                        <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=300" alt="Jane Smith" class="team-member-img">
+                    </div>
+                    <div class="team-member" data-name="Emily Davis" data-role="UX Designer">
+                        <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=300" alt="Emily Davis" class="team-member-img">
+                    </div>
+                    <div class="team-member" data-name="Tyler Durden" data-role="Lead Developer">
+                        <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300" alt="Tyler Durden" class="team-member-img">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 {% endblock %}
