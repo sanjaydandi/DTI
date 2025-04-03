@@ -326,7 +326,7 @@ def attendance():
                 flash('No face detected in the image. Please try again.', 'danger')
                 return redirect(url_for('attendance'))
 
-            # Compare with stored face encoding
+            # Get the currently logged in student's face encoding
             stored_encoding = json.loads(student.face_encoding)
             stored_encoding_np = np.array(stored_encoding)
 
@@ -336,6 +336,7 @@ def attendance():
             else:
                 face_encoding_to_compare = np.array(face_encoding)  # Convert list to numpy array
 
+            # Compare with stored face encoding - Make sure it matches the logged-in student
             match = compare_faces(stored_encoding_np, face_encoding_to_compare)
 
             if match:
@@ -349,9 +350,9 @@ def attendance():
                 if existing_attendance:
                     flash('Attendance already marked for today', 'info')
                 else:
-                    # Create new attendance record
+                    # Create new attendance record for the logged-in student only
                     new_attendance = Attendance(
-                        student_id=student_id,
+                        student_id=student_id,  # Use the student_id from the session
                         date=today,
                         time=datetime.now().time()
                     )
@@ -361,7 +362,8 @@ def attendance():
 
                 return redirect(url_for('student_dashboard'))
             else:
-                flash('Face verification failed. Please try again.', 'danger')
+                flash('Face verification failed. The face does not match your registered face. Please try again.', 'danger')
+                logger.warning(f"Face verification failed for student {student_id}")
 
         except Exception as e:
             db.session.rollback()

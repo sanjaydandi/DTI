@@ -54,7 +54,7 @@ class Student(db.Model):
             'class_name': self.class_name,
             'email': self.email,
             'face_encoding': self.face_encoding is not None,
-            'profile_image': self.profile_image is not None,
+            'profile_image': self.profile_image,  # Return the actual base64 image data
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 
@@ -90,7 +90,7 @@ class StudentRegistrationRequest(db.Model):
             'class_name': self.class_name,
             'email': self.email,
             'face_encoding': self.face_encoding is not None,
-            'profile_image': self.profile_image is not None,
+            'profile_image': self.profile_image,  # Return the actual base64 image data
             'status': self.status,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
