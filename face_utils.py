@@ -104,8 +104,8 @@ def is_valid_attendance_time():
 def is_valid_location(latitude, longitude):
     """Check if location is within allowed radius of campus"""
     # Example coordinates - replace with actual campus coordinates
-    CAMPUS_LAT = 12.3456  
-    CAMPUS_LONG = 78.9012
+    CAMPUS_LAT = 15.492489908291073  
+    CAMPUS_LONG = 80.0378496294504
     ALLOWED_RADIUS = 0.5  # kilometers
     
     from math import sin, cos, sqrt, atan2, radians
@@ -122,3 +122,5 @@ def is_valid_location(latitude, longitude):
     distance = R * c
     
     return distance <= ALLOWED_RADIUS
+
+ #  home 15.492489908291073, 80.0378496294504
