@@ -78,9 +78,13 @@ def student_login():
         student_id = request.form.get('student_id')
         password = request.form.get('password')
         
+        logger.debug(f"Login attempt for student ID: {student_id}")
         student = Student.query.get(student_id)
         
-        if student and student.check_password(password):
+        if student:
+            logger.debug("Student found in database")
+            if student.check_password(password):
+                logger.debug("Password check successful")
             session['student_id'] = student.id
             session['name'] = student.name
             session['is_admin'] = False
