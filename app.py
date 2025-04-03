@@ -265,14 +265,13 @@ def attendance():
     if not session.get('student_id'):
         flash('Please login first!', 'warning')
         return redirect(url_for('student_login'))
-        
-    # Check attendance time window
-    if not is_valid_attendance_time():
-        flash('Attendance can only be marked during 8:30-9:20 AM or 1:00-2:00 PM', 'danger')
-        return redirect(url_for('student_dashboard'))
-        
+    
     # Get location from request
     if request.method == 'POST':
+        # Check attendance time window when actually marking attendance
+        if not is_valid_attendance_time():
+            flash('Attendance can only be marked during 8:30-9:20 AM or 1:00-2:00 PM', 'danger')
+            return redirect(url_for('attendance'))
         latitude = request.form.get('latitude')
         longitude = request.form.get('longitude')
         
