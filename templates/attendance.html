@@ -21,6 +21,18 @@
                     </div>
                     
                     <form id="mark-attendance-form" action="{{ url_for('attendance') }}" method="POST" class="needs-validation" novalidate>
+    <input type="hidden" name="latitude" id="latitude">
+    <input type="hidden" name="longitude" id="longitude">
+    <script>
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                document.getElementById('latitude').value = position.coords.latitude;
+                document.getElementById('longitude').value = position.coords.longitude;
+            });
+        } else {
+            alert("Location access is required to mark attendance");
+        }
+    </script>
                         <div class="row mb-4">
                             <div class="col-12">
                                 <div class="webcam-container mb-3">

@@ -88,3 +88,37 @@ def compare_faces(known_face_encoding, face_encoding_to_check, tolerance=0.6):
     except Exception as e:
         logger.error(f"Error comparing faces: {str(e)}")
         return False
+def is_valid_attendance_time():
+    """Check if current time is within allowed windows"""
+    from datetime import datetime, time
+    current_time = datetime.now().time()
+    
+    morning_start = time(8, 30)
+    morning_end = time(9, 20)
+    afternoon_start = time(13, 0)  # 1:00 PM
+    afternoon_end = time(14, 0)    # 2:00 PM
+    
+    return ((morning_start <= current_time <= morning_end) or 
+            (afternoon_start <= current_time <= afternoon_end))
+
+def is_valid_location(latitude, longitude):
+    """Check if location is within allowed radius of campus"""
+    # Example coordinates - replace with actual campus coordinates
+    CAMPUS_LAT = 12.3456  
+    CAMPUS_LONG = 78.9012
+    ALLOWED_RADIUS = 0.5  # kilometers
+    
+    from math import sin, cos, sqrt, atan2, radians
+    R = 6371  # Earth's radius in km
+    
+    lat1, lon1 = radians(CAMPUS_LAT), radians(CAMPUS_LONG)
+    lat2, lon2 = radians(float(latitude)), radians(float(longitude))
+    
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    
+    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+    c = 2 * atan2(sqrt(a), sqrt(1-a))
+    distance = R * c
+    
+    return distance <= ALLOWED_RADIUS
