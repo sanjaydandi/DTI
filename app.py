@@ -91,13 +91,19 @@ def student_login():
         logger.debug(f"Login attempt for student ID: {student_id}")
         student = Student.query.get(student_id)
         
-        if student:
-            logger.debug("Student found in database")
-            if student.check_password(password):
-                logger.debug("Password check successful")
+        if student and student.check_password(password):
+            logger.debug("Student found and password check successful")
             session['student_id'] = student.id
             session['name'] = student.name
             session['is_admin'] = False
+            flash('Login successful!', 'success')
+            return redirect(url_for('student_dashboard'))
+        else:
+            if not student:
+                logger.debug(f"No student found with ID: {student_id}")
+            else:
+                logger.debug("Password check failed")
+            flash('Invalid student ID or password', 'danger')
             flash('Login successful!', 'success')
             return redirect(url_for('student_dashboard'))
         else:
