@@ -10,7 +10,7 @@ import cv2
 from PIL import Image
 
 from face_utils import encode_face, compare_faces
-from models import db, init_db, Admin, Student, Attendance
+from models import db, init_db, Admin, Student, Attendance, StudentRegistrationRequest, RequestStatus
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -153,9 +153,15 @@ def admin_dashboard():
     dates = sorted(attendance_by_date.keys()) if attendance_by_date else []
     counts = [attendance_by_date[d] for d in dates] if dates else []
 
+    # Get pending registration requests count
+    pending_count = StudentRegistrationRequest.query.filter_by(
+        status=RequestStatus.PENDING.value
+    ).count()
+    
     # Debug the chart data
     logger.debug(f"Chart dates: {dates}")
     logger.debug(f"Chart counts: {counts}")
+    logger.debug(f"Pending registration requests: {pending_count}")
 
     # Convert student objects to dictionaries for template
     students_data = [student.to_dict() for student in students]
@@ -169,6 +175,7 @@ def admin_dashboard():
                           students_present_today=students_present_today,
                           total_students=total_students,
                           attendance_percentage=attendance_percentage,
+                          pending_count=pending_count,
                           date=date)
 
 # Add student route
@@ -465,6 +472,242 @@ def delete_student():
         flash('Student not found', 'danger')
 
     return redirect(url_for('admin_dashboard'))
+
+# Student Registration Route
+@app.route('/student/register', methods=['GET', 'POST'])
+def student_register():
+    if request.method == 'POST':
+        try:
+            # Get form data
+            student_id = request.form.get('student_id')
+            name = request.form.get('name')
+            password = request.form.get('password')
+            confirm_password = request.form.get('confirm_password')
+            class_name = request.form.get('class_name')
+            email = request.form.get('email')
+            agree_terms = request.form.get('agree_terms')
+            
+            # Validate required fields
+            if not (student_id and name and password and confirm_password and class_name and agree_terms):
+                flash('Please fill all required fields', 'danger')
+                return render_template('student_register.html')
+            
+            # Check if passwords match
+            if password != confirm_password:
+                flash('Passwords do not match', 'danger')
+                return render_template('student_register.html')
+                
+            # Check if student ID already exists in students table
+            existing_student = Student.query.get(student_id)
+            if existing_student:
+                flash('A student with this ID already exists', 'danger')
+                return render_template('student_register.html')
+                
+            # Check if there's already a pending request with this ID
+            existing_request = StudentRegistrationRequest.query.filter_by(
+                student_id=student_id
+            ).first()
+            
+            if existing_request:
+                if existing_request.status == RequestStatus.PENDING.value:
+                    flash('A registration request with this ID is already pending approval', 'warning')
+                elif existing_request.status == RequestStatus.REJECTED.value:
+                    flash('Your previous registration request was rejected. Please contact an administrator.', 'warning')
+                else:
+                    flash('You are already registered. Please login.', 'info')
+                return render_template('student_register.html')
+            
+            # Process profile image if provided
+            profile_image_data = None
+            if 'profile_image' in request.files and request.files['profile_image'].filename:
+                profile_image = request.files['profile_image']
+                # Read image file
+                profile_image_binary = profile_image.read()
+                # Convert to base64 for storage
+                profile_image_data = base64.b64encode(profile_image_binary).decode('utf-8')
+                
+                # Check if we can extract a face from the image
+                try:
+                    image = Image.open(io.BytesIO(profile_image_binary))
+                    image_np = np.array(image)
+                    
+                    # Convert RGB to BGR for OpenCV if color image
+                    if len(image_np.shape) == 3:
+                        image_np = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
+                    
+                    # Encode the face
+                    face_encoding = encode_face(image_np)
+                    
+                    if face_encoding is None:
+                        flash('No face detected in the uploaded image. Please upload a clear photo of your face.', 'danger')
+                        return render_template('student_register.html')
+                    
+                    # Convert face encoding to JSON for storage
+                    if hasattr(face_encoding, 'tolist'):
+                        face_encoding_list = face_encoding.tolist()
+                    else:
+                        face_encoding_list = face_encoding
+                    
+                    face_encoding_str = json.dumps(face_encoding_list)
+                except Exception as e:
+                    logger.error(f"Error processing profile image: {str(e)}")
+                    flash('Error processing the uploaded image. Please try a different image.', 'danger')
+                    return render_template('student_register.html')
+            else:
+                # No face encoding if no image provided
+                face_encoding_str = None
+            
+            # Create the registration request
+            new_request = StudentRegistrationRequest(
+                student_id=student_id,
+                name=name,
+                class_name=class_name,
+                email=email,
+                profile_image=profile_image_data,
+                face_encoding=face_encoding_str,
+                status=RequestStatus.PENDING.value
+            )
+            new_request.set_password(password)
+            
+            # Save to database
+            db.session.add(new_request)
+            db.session.commit()
+            
+            flash('Your registration request has been submitted. An administrator will review it shortly.', 'success')
+            return redirect(url_for('student_login'))
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error in student registration: {str(e)}")
+            flash(f'Error in registration: {str(e)}', 'danger')
+    
+    return render_template('student_register.html')
+
+# Admin Manage Registration Requests Route
+@app.route('/admin/manage_requests')
+def manage_requests():
+    if not session.get('is_admin'):
+        flash('Please login as admin first!', 'warning')
+        return redirect(url_for('admin_login'))
+    
+    # Fetch requests by status
+    pending_requests = StudentRegistrationRequest.query.filter_by(
+        status=RequestStatus.PENDING.value
+    ).order_by(StudentRegistrationRequest.created_at.desc()).all()
+    
+    approved_requests = StudentRegistrationRequest.query.filter_by(
+        status=RequestStatus.APPROVED.value
+    ).order_by(StudentRegistrationRequest.updated_at.desc()).all()
+    
+    rejected_requests = StudentRegistrationRequest.query.filter_by(
+        status=RequestStatus.REJECTED.value
+    ).order_by(StudentRegistrationRequest.updated_at.desc()).all()
+    
+    # Count of requests by status
+    pending_count = len(pending_requests)
+    approved_count = len(approved_requests)
+    rejected_count = len(rejected_requests)
+    
+    return render_template('manage_requests.html',
+                          pending_requests=pending_requests,
+                          approved_requests=approved_requests,
+                          rejected_requests=rejected_requests,
+                          pending_count=pending_count,
+                          approved_count=approved_count,
+                          rejected_count=rejected_count)
+
+# Admin Approve/Reject Registration Routes
+@app.route('/admin/manage_requests/approve', methods=['POST'])
+def approve_request():
+    if not session.get('is_admin'):
+        return {'success': False, 'message': 'Unauthorized'}, 401
+    
+    try:
+        data = request.json
+        request_id = data.get('request_id')
+        admin_notes = data.get('admin_notes', '')
+        
+        if not request_id:
+            return {'success': False, 'message': 'Missing request ID'}, 400
+        
+        # Find the request
+        reg_request = StudentRegistrationRequest.query.get(request_id)
+        if not reg_request:
+            return {'success': False, 'message': 'Request not found'}, 404
+        
+        # Check if already processed
+        if reg_request.status != RequestStatus.PENDING.value:
+            return {
+                'success': False, 
+                'message': f'Request already {reg_request.status}'
+            }, 400
+        
+        # Create a new student from the request
+        new_student = Student(
+            id=reg_request.student_id,
+            name=reg_request.name,
+            password_hash=reg_request.password_hash,  # Use the same password hash
+            class_name=reg_request.class_name,
+            email=reg_request.email,
+            face_encoding=reg_request.face_encoding,
+            profile_image=reg_request.profile_image
+        )
+        
+        # Update request status
+        reg_request.status = RequestStatus.APPROVED.value
+        reg_request.admin_notes = admin_notes
+        reg_request.updated_at = datetime.utcnow()
+        
+        # Save to database
+        db.session.add(new_student)
+        db.session.commit()
+        
+        return {'success': True, 'message': 'Request approved successfully'}
+    
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error approving request: {str(e)}")
+        return {'success': False, 'message': f'Error: {str(e)}'}, 500
+
+@app.route('/admin/manage_requests/reject', methods=['POST'])
+def reject_request():
+    if not session.get('is_admin'):
+        return {'success': False, 'message': 'Unauthorized'}, 401
+    
+    try:
+        data = request.json
+        request_id = data.get('request_id')
+        admin_notes = data.get('admin_notes', '')
+        
+        if not request_id:
+            return {'success': False, 'message': 'Missing request ID'}, 400
+        
+        # Find the request
+        reg_request = StudentRegistrationRequest.query.get(request_id)
+        if not reg_request:
+            return {'success': False, 'message': 'Request not found'}, 404
+        
+        # Check if already processed
+        if reg_request.status != RequestStatus.PENDING.value:
+            return {
+                'success': False, 
+                'message': f'Request already {reg_request.status}'
+            }, 400
+        
+        # Update request status
+        reg_request.status = RequestStatus.REJECTED.value
+        reg_request.admin_notes = admin_notes
+        reg_request.updated_at = datetime.utcnow()
+        
+        # Save to database
+        db.session.commit()
+        
+        return {'success': True, 'message': 'Request rejected successfully'}
+    
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error rejecting request: {str(e)}")
+        return {'success': False, 'message': f'Error: {str(e)}'}, 500
 
 @app.route('/logout')
 def logout():

@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from enum import Enum
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -35,6 +36,7 @@ class Student(db.Model):
     class_name = db.Column(db.String(50), nullable=False)
     face_encoding = db.Column(db.Text, nullable=True)  # Store as JSON string
     profile_image = db.Column(db.Text, nullable=True)  # Store base64 image
+    email = db.Column(db.String(100), nullable=True)  # Optional email for contact
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     attendances = db.relationship('Attendance', backref='student', lazy=True)
@@ -50,8 +52,48 @@ class Student(db.Model):
             'id': self.id,
             'name': self.name,
             'class_name': self.class_name,
-            'face_encoding': self.face_encoding,
+            'email': self.email,
+            'face_encoding': self.face_encoding is not None,
+            'profile_image': self.profile_image is not None,
             'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+class RequestStatus(Enum):
+    PENDING = 'pending'
+    APPROVED = 'approved'
+    REJECTED = 'rejected'
+
+class StudentRegistrationRequest(db.Model):
+    __tablename__ = 'student_registration_requests'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.String(20), unique=True, nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    password_hash = db.Column(db.String(256), nullable=False)
+    class_name = db.Column(db.String(50), nullable=False)
+    email = db.Column(db.String(100), nullable=True)
+    profile_image = db.Column(db.Text, nullable=True)  # Store base64 image
+    face_encoding = db.Column(db.Text, nullable=True)  # Store as JSON string
+    status = db.Column(db.String(20), default=RequestStatus.PENDING.value, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    admin_notes = db.Column(db.Text, nullable=True)  # Notes added by admin when approving/rejecting
+    
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'student_id': self.student_id,
+            'name': self.name,
+            'class_name': self.class_name,
+            'email': self.email,
+            'face_encoding': self.face_encoding is not None,
+            'profile_image': self.profile_image is not None,
+            'status': self.status,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
 
 class Attendance(db.Model):
