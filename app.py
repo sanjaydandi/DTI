@@ -519,29 +519,34 @@ def student_register():
                     flash('You are already registered. Please login.', 'info')
                 return render_template('student_register.html')
             
-            # Process profile image if provided
+            # Process face image captured from webcam
             profile_image_data = None
-            if 'profile_image' in request.files and request.files['profile_image'].filename:
-                profile_image = request.files['profile_image']
-                # Read image file
-                profile_image_binary = profile_image.read()
-                # Convert to base64 for storage
-                profile_image_data = base64.b64encode(profile_image_binary).decode('utf-8')
-                
-                # Check if we can extract a face from the image
+            face_encoding_str = None
+            face_image_data = request.form.get('face_image')
+            
+            if face_image_data:
                 try:
-                    image = Image.open(io.BytesIO(profile_image_binary))
+                    # Process the base64 image data
+                    if ',' in face_image_data:
+                        face_image_data = face_image_data.split(',')[1]
+                    
+                    # Store the base64 data for the profile image
+                    profile_image_data = face_image_data
+                    
+                    # Decode base64 for face encoding
+                    face_image_binary = base64.b64decode(face_image_data)
+                    image = Image.open(io.BytesIO(face_image_binary))
                     image_np = np.array(image)
                     
                     # Convert RGB to BGR for OpenCV if color image
-                    if len(image_np.shape) == 3:
+                    if len(image_np.shape) == 3:  # Color image
                         image_np = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
                     
                     # Encode the face
                     face_encoding = encode_face(image_np)
                     
                     if face_encoding is None:
-                        flash('No face detected in the uploaded image. Please upload a clear photo of your face.', 'danger')
+                        flash('No face detected in the captured image. Please try again with a clearer face position.', 'danger')
                         return render_template('student_register.html')
                     
                     # Convert face encoding to JSON for storage
@@ -552,12 +557,13 @@ def student_register():
                     
                     face_encoding_str = json.dumps(face_encoding_list)
                 except Exception as e:
-                    logger.error(f"Error processing profile image: {str(e)}")
-                    flash('Error processing the uploaded image. Please try a different image.', 'danger')
+                    logger.error(f"Error processing captured face image: {str(e)}")
+                    flash('Error processing the captured image. Please try again.', 'danger')
                     return render_template('student_register.html')
             else:
-                # No face encoding if no image provided
-                face_encoding_str = None
+                # No face image provided
+                flash('Please capture your face using the camera before registering.', 'danger')
+                return render_template('student_register.html')
             
             # Create the registration request
             new_request = StudentRegistrationRequest(
