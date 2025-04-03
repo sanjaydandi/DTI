@@ -98,8 +98,14 @@ def is_valid_attendance_time():
     afternoon_start = time(13, 0)  # 1:00 PM
     afternoon_end = time(14, 0)    # 2:00 PM
     
-    return ((morning_start <= current_time <= morning_end) or 
-            (afternoon_start <= current_time <= afternoon_end))
+    is_valid = ((morning_start <= current_time <= morning_end) or 
+                (afternoon_start <= current_time <= afternoon_end))
+    
+    logger.info(f"Current time: {current_time}, Is valid time: {is_valid}")
+    logger.info(f"Morning window: {morning_start}-{morning_end}")
+    logger.info(f"Afternoon window: {afternoon_start}-{afternoon_end}")
+    
+    return is_valid
 
 def is_valid_location(latitude, longitude):
     """Check if location is within allowed radius of campus"""
