@@ -35,8 +35,18 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'connect_args': {'connect_timeout': 15}
 }
 
-# Initialize database
-init_db(app)
+# Initialize database and recreate all tables
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db.init_app(app)
+with app.app_context():
+    db.drop_all()  # This will drop all existing tables
+    db.create_all()  # This will create all tables with updated schema
+    # Create default admin
+    if Admin.query.count() == 0:
+        default_admin = Admin(username='admin', full_name='System Administrator')
+        default_admin.set_password('admin')
+        db.session.add(default_admin)
+        db.session.commit()
 
 # Route for home page
 @app.route('/')
