@@ -19,11 +19,26 @@
                         <i class="fas fa-info-circle me-2"></i>
                         Position your face properly in front of the camera and click the capture button.
                         <br><br>
+                        <strong>Current Time:</strong> <span id="current-time" class="fw-bold"></span><br><br>
                         <strong>Note:</strong> Attendance can only be marked during these time windows:
                         <ul class="mb-0">
                             <li>Morning: 8:30 AM - 9:20 AM</li>
                             <li>Afternoon: 1:00 PM - 2:00 PM</li>
                         </ul>
+                        <script>
+                            function updateTime() {
+                                const now = new Date();
+                                const timeStr = now.toLocaleTimeString('en-US', { 
+                                    hour: '2-digit', 
+                                    minute: '2-digit',
+                                    second: '2-digit',
+                                    hour12: true 
+                                });
+                                document.getElementById('current-time').textContent = timeStr;
+                            }
+                            updateTime();
+                            setInterval(updateTime, 1000);
+                        </script>
                     </div>
                     
                     <form id="mark-attendance-form" action="{{ url_for('attendance') }}" method="POST" class="needs-validation" novalidate>
