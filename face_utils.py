@@ -93,7 +93,7 @@ def is_valid_attendance_time():
     from datetime import datetime, time
     current_time = datetime.now().time()
     
-    morning_start = time(8, 30)
+    morning_start = time(7, 30)
     morning_end = time(9, 20)
     afternoon_start = time(13, 0)  # 1:00 PM
     afternoon_end = time(14, 0)    # 2:00 PM
