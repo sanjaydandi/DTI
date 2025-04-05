@@ -103,6 +103,7 @@ class Attendance(db.Model):
     student_id = db.Column(db.String(20), db.ForeignKey('students.id'), nullable=False)
     date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date)
     time = db.Column(db.Time, nullable=False, default=datetime.utcnow().time)
+    status = db.Column(db.String(20), nullable=False, default='present')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     def to_dict(self):

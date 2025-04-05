@@ -8,6 +8,7 @@ from datetime import datetime, date
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 import cv2
 from PIL import Image
+from functools import wraps  # Add this import for the decorator
 
 from face_utils import encode_face, compare_faces
 from models import db, init_db, Admin, Student, Attendance, StudentRegistrationRequest, RequestStatus
@@ -19,6 +20,16 @@ logger = logging.getLogger(__name__)
 # Create Flask app
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key")
+
+# Define admin_required decorator
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('is_admin'):
+            flash('Please login as admin first!', 'warning')
+            return redirect(url_for('admin_login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 # Configure database
 db_url = os.environ.get('DATABASE_URL')
@@ -49,9 +60,15 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 with app.app_context():
-    db.drop_all()  # This will drop all existing tables
+    # Check if we should preserve the database
+    preserve_db = os.environ.get('PRESERVE_DB', 'False').lower() == 'true'
+    
+    if not preserve_db:
+        db.drop_all()  # This will drop all existing tables
+        
     db.create_all()  # This will create all tables with updated schema
-    # Create default admin
+    
+    # Create default admin only if it doesn't exist
     if Admin.query.count() == 0:
         default_admin = Admin(username='admin', full_name='System Administrator')
         default_admin.set_password('admin')
@@ -464,26 +481,46 @@ def manage_attendance():
                           today=date.today().strftime('%Y-%m-%d'))
 
 # Logout route
-@app.route('/admin/delete_student', methods=['POST'])
-def delete_student():
-    if not session.get('is_admin'):
-        flash('Please login as admin first!', 'warning')
-        return redirect(url_for('admin_login'))
-
-    student_id = request.form.get('student_id')
-    student = Student.query.get(student_id)
-
-    if student:
-        # Delete associated attendance records first
-        Attendance.query.filter_by(student_id=student_id).delete()
-        # Delete the student
-        db.session.delete(student)
+@app.route('/admin/edit_student/<student_id>', methods=['GET', 'POST'])
+@admin_required
+def edit_student(student_id):
+    student = Student.query.get_or_404(student_id)
+    
+    if request.method == 'POST':
+        student.name = request.form['name']
+        student.class_name = request.form['class_name']
+        student.email = request.form['email']
+        
+        # Update password if provided
+        if request.form['password'] and request.form['password'].strip():
+            student.password_hash = generate_password_hash(request.form['password'])
+        
+        # Handle profile image update if provided
+        if 'profile_image' in request.files and request.files['profile_image'].filename:
+            file = request.files['profile_image']
+            # Process and save the image
+            # This depends on how you're handling image storage
+            
         db.session.commit()
-        flash(f'Student {student.name} has been deleted', 'success')
-    else:
-        flash('Student not found', 'danger')
+        flash('Student updated successfully!', 'success')
+        return redirect(url_for('student_profiles'))
+    
+    return render_template('edit_student.html', student=student)
 
-    return redirect(url_for('admin_dashboard'))
+@app.route('/admin/delete_student/<student_id>', methods=['POST'])
+@admin_required
+def delete_student(student_id):
+    student = Student.query.get_or_404(student_id)
+    
+    # Delete related attendance records first
+    Attendance.query.filter_by(student_id=student_id).delete()
+    
+    # Delete the student
+    db.session.delete(student)
+    db.session.commit()
+    
+    flash('Student deleted successfully!', 'success')
+    return redirect(url_for('student_profiles'))
 
 # Student Registration Route
 @app.route('/student/register', methods=['GET', 'POST'])
@@ -732,3 +769,74 @@ def logout():
     session.clear()
     flash('You have been logged out', 'info')
     return redirect(url_for('index'))
+
+@app.route('/admin/student_profiles')
+@admin_required
+def student_profiles():
+    # Get all students from the database
+    students = Student.query.all()
+    
+    # Get search and filter parameters
+    search = request.args.get('search', '')
+    class_filter = request.args.get('class', '')
+    sort_by = request.args.get('sort', 'name')
+    
+    # Apply search filter if provided
+    if search:
+        students = [s for s in students if search.lower() in s.name.lower() or search.lower() in s.id.lower()]
+    
+    # Apply class filter if provided
+    if class_filter:
+        students = [s for s in students if s.class_name == class_filter]
+    
+    # Get list of unique class names for the filter dropdown
+    class_list = sorted(list(set(s.class_name for s in Student.query.all() if s.class_name)))
+    
+    # Calculate attendance percentage for each student
+    for student in students:
+        total_days = Attendance.query.filter_by(student_id=student.id).count()
+        if total_days > 0:
+            present_days = Attendance.query.filter_by(student_id=student.id, status='present').count()
+            student.attendance_percentage = (present_days / total_days) * 100
+        else:
+            student.attendance_percentage = 0
+        
+        # Get latest attendance record
+        student.latest_attendance = Attendance.query.filter_by(student_id=student.id).order_by(Attendance.date.desc()).first()
+    
+    # Sort students based on selected criteria
+    if sort_by == 'name':
+        students.sort(key=lambda x: x.name)
+    elif sort_by == 'id':
+        students.sort(key=lambda x: x.id)
+    elif sort_by == 'attendance':
+        students.sort(key=lambda x: x.attendance_percentage, reverse=True)
+    
+    return render_template('student_profiles.html', 
+                          students=students, 
+                          class_list=class_list,
+                          request=request)
+
+@app.route('/admin/student_profile/<student_id>')
+@admin_required
+def student_profile_detail(student_id):
+    student = Student.query.get_or_404(student_id)
+    
+    # Get attendance records for this student
+    attendance_records = Attendance.query.filter_by(student_id=student_id).order_by(Attendance.date.desc()).all()
+    
+    # Calculate attendance statistics
+    total_days = len(attendance_records)
+    if total_days > 0:
+        attendance_percentage = (total_days / total_days) * 100
+    else:
+        attendance_percentage = 0
+    
+    # Get dates for attendance chart
+    dates = [record.date.strftime('%Y-%m-%d') for record in attendance_records]
+    
+    return render_template('student_profile_detail.html',
+                          student=student,
+                          attendance_records=attendance_records,
+                          attendance_percentage=attendance_percentage,
+                          dates=dates)
