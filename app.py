@@ -9,6 +9,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 import cv2
 from PIL import Image
 from functools import wraps  # Add this import for the decorator
+from werkzeug.security import generate_password_hash, check_password_hash
 
 from face_utils import encode_face, compare_faces
 from models import db, init_db, Admin, Student, Attendance, StudentRegistrationRequest, RequestStatus
@@ -493,7 +494,7 @@ def edit_student(student_id):
         
         # Update password if provided
         if request.form['password'] and request.form['password'].strip():
-            student.password_hash = generate_password_hash(request.form['password'])
+            student.set_password(request.form['password'])
         
         # Handle profile image update if provided
         if 'profile_image' in request.files and request.files['profile_image'].filename:
