@@ -23,16 +23,26 @@ app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key")
 # Configure database
 db_url = os.environ.get('DATABASE_URL')
 if db_url:
+    # If using external PostgreSQL, ensure URL starts with postgresql://
+    if db_url.startswith('postgres://'):
+        db_url = db_url.replace('postgres://', 'postgresql://', 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 else:
+    # For PythonAnywhere MySQL
+    username = 'your_pythonanywhere_username'
+    mysql_username = username
+    mysql_password = 'your_database_password'
+    mysql_hostname = username + '.mysql.pythonanywhere-services.com'
+    mysql_database = username + '$default'
+    
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql://{mysql_username}:{mysql_password}@{mysql_hostname}/{mysql_database}'
     # Fallback to SQLite if no DATABASE_URL is provided
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///attendance.db'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_pre_ping': True,
-    'pool_recycle': 300,
-    'connect_args': {'connect_timeout': 15}
+    'pool_recycle': 300
 }
 
 # Initialize database and recreate all tables
