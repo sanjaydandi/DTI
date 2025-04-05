@@ -336,68 +336,86 @@ def attendance():
                 return redirect(url_for('attendance'))
 
             # Process the base64 image data
-            face_image_data = face_image_data.split(',')[1]
-            face_image_binary = base64.b64decode(face_image_data)
-            face_image = Image.open(io.BytesIO(face_image_binary))
-
-            # Convert PIL Image to numpy array for face_recognition
-            face_image_np = np.array(face_image)
-
-            # Convert RGB to BGR for OpenCV
-            if len(face_image_np.shape) == 3:  # Color image
-                face_image_np = cv2.cvtColor(face_image_np, cv2.COLOR_RGB2BGR)
-
-            # Encode the face
-            face_encoding = encode_face(face_image_np)
-
-            if face_encoding is None:
-                flash('No face detected in the image. Please try again.', 'danger')
+            try:
+                # Remove data URL prefix if present
+                if ',' in face_image_data:
+                    face_image_data = face_image_data.split(',')[1]
+                face_image_binary = base64.b64decode(face_image_data)
+                face_image = Image.open(io.BytesIO(face_image_binary))
+            except Exception as e:
+                logger.error(f"Error processing image data: {str(e)}")
+                flash('Invalid image data provided', 'danger')
                 return redirect(url_for('attendance'))
 
-            # Get the currently logged in student's face encoding
-            stored_encoding = json.loads(student.face_encoding)
-            stored_encoding_np = np.array(stored_encoding)
+            # Convert PIL Image to numpy array
+            face_image_np = np.array(face_image)
 
-            # Handle both numpy arrays and lists for face_encoding
-            if hasattr(face_encoding, 'tolist'):
-                face_encoding_to_compare = face_encoding
+            # Convert RGB to BGR for OpenCV if it's a color image
+            if len(face_image_np.shape) == 3:
+                face_image_np = cv2.cvtColor(face_image_np, cv2.COLOR_RGB2BGR)
+
+            # Encode the captured face
+            captured_face_encoding = encode_face(face_image_np)
+
+            if captured_face_encoding is None:
+                flash('No face detected in the image. Please try again with a clear face position.', 'danger')
+                return redirect(url_for('attendance'))
+
+            # Get the stored face encoding for the logged-in student
+            if not student.face_encoding:
+                flash('No registered face found. Please contact administrator.', 'danger')
+                return redirect(url_for('attendance'))
+
+            try:
+                stored_encoding = np.array(json.loads(student.face_encoding))
+            except Exception as e:
+                logger.error(f"Error loading stored face encoding: {str(e)}")
+                flash('Error verifying face. Please contact administrator.', 'danger')
+                return redirect(url_for('attendance'))
+
+            # Compare faces with a stricter threshold
+            match = compare_faces(stored_encoding, captured_face_encoding, tolerance=0.5)  # Lower tolerance = stricter matching
+
+            if not match:
+                logger.warning(f"Face verification failed for student {student_id}")
+                flash('Face verification failed. This does not appear to be the registered student.', 'danger')
+                return redirect(url_for('attendance'))
+
+            # Check if attendance already marked for today
+            today = date.today()
+            existing_attendance = Attendance.query.filter_by(
+                student_id=student_id,
+                date=today
+            ).first()
+
+            if existing_attendance:
+                flash('You have already marked your attendance for today', 'info')
             else:
-                face_encoding_to_compare = np.array(face_encoding)  # Convert list to numpy array
-
-            # Compare with stored face encoding - Make sure it matches the logged-in student
-            match = compare_faces(stored_encoding_np, face_encoding_to_compare)
-
-            if match:
-                # Check if attendance already marked for today
-                today = date.today()
-                existing_attendance = Attendance.query.filter_by(
+                # Create new attendance record
+                new_attendance = Attendance(
                     student_id=student_id,
-                    date=today
-                ).first()
-
-                if existing_attendance:
-                    flash('Attendance already marked for today', 'info')
-                else:
-                    # Create new attendance record for the logged-in student only
-                    new_attendance = Attendance(
-                        student_id=student_id,  # Use the student_id from the session
-                        date=today,
-                        time=datetime.now().time()
-                    )
+                    date=today,
+                    time=datetime.now().time(),
+                    status='present'
+                )
+                
+                try:
                     db.session.add(new_attendance)
                     db.session.commit()
-                    flash('Attendance marked successfully!', 'success')
+                    flash('Your attendance has been marked successfully!', 'success')
+                except Exception as e:
+                    db.session.rollback()
+                    logger.error(f"Database error marking attendance: {str(e)}")
+                    flash('Error marking attendance. Please try again.', 'danger')
 
-                return redirect(url_for('student_dashboard'))
-            else:
-                flash('Face verification failed. The face does not match your registered face. Please try again.', 'danger')
-                logger.warning(f"Face verification failed for student {student_id}")
+            return redirect(url_for('student_dashboard'))
 
         except Exception as e:
             db.session.rollback()
-            logger.error(f"Error marking attendance: {str(e)}")
-            flash(f'Error marking attendance: {str(e)}', 'danger')
+            logger.error(f"Error in attendance marking: {str(e)}")
+            flash('An error occurred. Please try again.', 'danger')
 
+    # For GET request, show the attendance form
     return render_template('attendance.html', student=student.to_dict())
 
 # Admin manage attendance route

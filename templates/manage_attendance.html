@@ -21,6 +21,7 @@
                     </div>
                     
                     <form method="post" action="{{ url_for('manage_attendance') }}" class="needs-validation" novalidate>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
@@ -135,5 +136,19 @@
             });
         }, false);
     })();
+
+    // Prevent right-click on face images
+    document.querySelectorAll('.student-details img').forEach(img => {
+        img.addEventListener('contextmenu', e => e.preventDefault());
+    });
+
+    // Add security warning when accessing face verification
+    document.querySelectorAll('[href*="attendance"]').forEach(link => {
+        link.addEventListener('click', function(e) {
+            if (!confirm('You are about to access the face verification system. Only the registered student can mark their attendance. Continue?')) {
+                e.preventDefault();
+            }
+        });
+    });
 </script>
 {% endblock %}
